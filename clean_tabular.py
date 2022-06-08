@@ -4,9 +4,19 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 import numpy as np
 
+#Load the dataset from CSV
 pd.set_option('display.max_columns', None)
 products_df = pd.read_csv("Products.csv", lineterminator='\n')
-#Correct Price Column to remove leading £ sign, remove comma, and change data type to float
+
+#Visualize data
+products_df.head()
+products_df.describe()
+products_df.info()
+products_df.columns
+#For a categorical dataset we want to see how many instances of each category there are #Use this later!
+#products_df['category'].value_counts()
+
+#Correct Price Column to remove leading £ sign, remove comma, and change data type to float then convert to int
 products_df['price'] = products_df['price'].str.strip('£')
 products_df['price'] = products_df['price'].str.replace(',', '')
 products_df['price'] = products_df['price'].astype('float64')
