@@ -3,12 +3,13 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 import numpy as np
-import glob
-from PIL import Image
 
 #Load the dataset from CSV
 pd.set_option('display.max_columns', None)
 products_df = pd.read_csv("Products.csv", lineterminator='\n')
+
+#Load Image Data for classification
+image_data = np.load('images.npy')
 
 #Visualize data
 products_df.head()
@@ -42,11 +43,6 @@ print(np.sort(products_df['product_name'].unique()))
 print(np.sort(products_df['product_description'].unique()))
 print(np.sort(products_df['location'].unique()))
 print(np.sort(products_df['category'].unique()))
-
-#Get Image Data from Cleaned_Images and convert to numpy Array
-filelist = glob.glob('cleaned_images/*.jpg')
-temp = np.array([np.array(Image.open(fname)) for fname in filelist])
-print(temp.shape)
 
 cvec = CountVectorizer()
 
