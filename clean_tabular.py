@@ -3,6 +3,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 import numpy as np
+import glob
+from PIL import Image
 
 #Load the dataset from CSV
 pd.set_option('display.max_columns', None)
@@ -16,7 +18,7 @@ products_df.columns
 #For a categorical dataset we want to see how many instances of each category there are #Use this later!
 #products_df['category'].value_counts()
 
-#Split Catagory Column to most general Category that the product exits in, then map to unique Int in new df column
+#Split Catagory Column to most general Category that the product exits in, then map to unique Int, in new df column
 result = [x.split(" / ")[0] for x in products_df['category']]
 products_df['category_unique'] = result
 mapping = {item:i for i, item in enumerate(products_df["category_unique"].unique())}
@@ -40,6 +42,11 @@ print(np.sort(products_df['product_name'].unique()))
 print(np.sort(products_df['product_description'].unique()))
 print(np.sort(products_df['location'].unique()))
 print(np.sort(products_df['category'].unique()))
+
+#Get Image Data from Cleaned_Images and convert to numpy Array
+filelist = glob.glob('cleaned_images/*.jpg')
+temp = np.array([np.array(Image.open(fname)) for fname in filelist])
+print(temp.shape)
 
 cvec = CountVectorizer()
 
