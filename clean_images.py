@@ -1,5 +1,7 @@
 from PIL import Image
 import os
+import glob
+import numpy as np
 
 def resize_image(final_size, im):
     size = im.size
@@ -10,6 +12,11 @@ def resize_image(final_size, im):
     new_im.paste(im, ((final_size-new_image_size[0])//2, (final_size-new_image_size[1])//2))
     return new_im
 
+def save_Images_toNumpy():
+    filelist = glob.glob('cleaned_images/*.jpg')
+    temp = np.array([np.array(Image.open(fname)) for fname in filelist])
+    np.save('images', temp)
+
 if __name__ == '__main__':
     path = "images/"
     dirs = os.listdir(path)
@@ -18,3 +25,6 @@ if __name__ == '__main__':
         im = Image.open('images/' + item)
         new_im = resize_image(final_size, im)
         new_im.save(f'cleaned_images/{n}_resized.jpg')
+    save_Images_toNumpy()
+
+    
