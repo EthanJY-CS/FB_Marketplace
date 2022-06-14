@@ -2,14 +2,13 @@ import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 import numpy as np
 
 #Load the dataset from CSV
 pd.set_option('display.max_columns', None)
 products_df = pd.read_csv("Products.csv", lineterminator='\n')
-
-#Load Image Data for classification
-image_data = np.load('images.npy')
+images_df = pd.read_csv("Images.csv", lineterminator='\n')
 
 #Visualize data
 products_df.head()
@@ -67,8 +66,27 @@ cvec = CountVectorizer(stop_words='english').fit(x_train)
 location_train = pd.DataFrame(cvec.transform(x_train).todense(), columns=cvec.get_feature_names_out())
 location_test = pd.DataFrame(cvec.transform(x_test).todense(), columns=cvec.get_feature_names_out())
 
+#Logistic Regression Model for product name, description and location with regards to price
 #train = pd.concat([name_train, description_train, location_train], axis=1)
 #test = pd.concat([name_test, description_test, location_test], axis=1)
 #lr = LogisticRegression(max_iter=10000)
 #lr.fit(train, y_train)
 #print(lr.score(test, y_test))
+
+#Load Image Data for classification
+image_data = np.load('images.npy')
+
+#Merge The 2 dataframes on product_id and id
+merged_df = images_df.merge(products_df[['id', 'category_unique']], left_on='product_id',
+                  right_on='id')
+
+#Classification Model for the cleaned Images
+X = image_data[:12604]
+print(X.shape)
+y = merged_df['category_unique']
+print(y.shape)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+log_reg = LogisticRegression(multi_class='multinomial', solver='newton-cg')
+log_reg.fit(X_train, y_train)
+y_pred = log_reg.predict(X_test)
+print(accuracy_score(y_test, y_pred))
