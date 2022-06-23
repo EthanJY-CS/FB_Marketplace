@@ -1,92 +1,106 @@
 import pandas as pd
+import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
-import numpy as np
+from sklearn.linear_model import SGDClassifier
 
 #Load the dataset from CSV
 pd.set_option('display.max_columns', None)
 products_df = pd.read_csv("Products.csv", lineterminator='\n')
 images_df = pd.read_csv("Images.csv", lineterminator='\n')
 
-#Visualize data
-products_df.head()
-products_df.describe()
-products_df.info()
-products_df.columns
-#For a categorical dataset we want to see how many instances of each category there are #Use this later!
-#products_df['category'].value_counts()
+def read_DataFrame(df):
+    print(df.head())
+    df.describe()
+    df.info()
+    df.columns
 
-#Split Catagory Column to most general Category that the product exits in, then map to unique Int, in new df column
-result = [x.split(" / ")[0] for x in products_df['category']]
-products_df['category_unique'] = result
-mapping = {item:i for i, item in enumerate(products_df["category_unique"].unique())}
-products_df["category_unique"] = products_df["category_unique"].apply(lambda x: mapping[x])
+#read_DataFrame(products_df)
+#read_DataFrame(images_df)
 
-#Correct Price Column to remove leading £ sign, remove comma, and change data type to float then convert to int
-products_df['price'] = products_df['price'].str.strip('£')
-products_df['price'] = products_df['price'].str.replace(',', '')
-products_df['price'] = products_df['price'].astype('float64')
-products_df['price'] = products_df['price'].astype('int')
+def get_unique(df):
+    for column in df.columns:
+        print(column)
+        print(np.sort(df[column].unique()))
 
-#Remove all non AlphaNumeric Characters from both the product name and product description!
-products_df['product_name'] = products_df['product_name'].str.replace('\r', ' ', regex=False)
-products_df['product_description'] = products_df['product_description'].str.replace('\r', ' ', regex=False)
-products_df['product_name'] = products_df['product_name'].str.replace('\W\s', '', regex=True)
-products_df['product_description'] = products_df['product_description'].str.replace('\W\s', '', regex=True)
+#get_unique(products_df)
+#get_unique(images_df)
 
-#Prints All unique values of the data columns we are interested in
-print(np.sort(products_df['price'].unique()))
-print(np.sort(products_df['product_name'].unique()))
-print(np.sort(products_df['product_description'].unique()))
-print(np.sort(products_df['location'].unique()))
-print(np.sort(products_df['category'].unique()))
+def clean_MergedDataframe():
+    merged_df = products_df.merge(images_df[['product_id']], left_on='id',
+                  right_on='product_id').drop(['id', 'url', 'page_id', 'create_time', 'product_id'], axis=1)
+    merged_df = merged_df.iloc[: , 1:]
+    merged_df = merged_df.astype('string')
+    merged_df['price'] = merged_df['price'].str.replace('[£,]', '', regex=True)
+    merged_df['price'] = merged_df['price'].astype('float64')
+    merged_df['price'] = merged_df['price'].astype('int')
+    merged_df['product_name'] = merged_df['product_name'].str.lower().replace('\W', ' ', regex=True)
+    merged_df['product_name'] = merged_df['product_name'].str.replace('\s+', ' ', regex=True)
+    merged_df['product_description'] = merged_df['product_description'].str.lower().replace('\W', ' ', regex=True)
+    merged_df['product_description'] = merged_df['product_description'].str.replace('\s+', ' ', regex=True)
+    merged_df['location'] = merged_df['location'].str.lower().replace(',', '', regex=True)
+    result = [x.split(" / ")[0] for x in merged_df['category']]
+    merged_df['category'] = result
+    merged_df['category'] = merged_df['category'].astype('category').cat.codes
+    return merged_df
 
-cvec = CountVectorizer()
+merged_df = clean_MergedDataframe()
+#read_DataFrame(merged_df)
+#get_unique(merged_df)
 
-x = products_df['product_name']
-y = products_df['price']
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.33)
-cvec = CountVectorizer(stop_words='english').fit(x_train)
-name_train = pd.DataFrame(cvec.transform(x_train).todense(), columns=cvec.get_feature_names_out())
-name_test = pd.DataFrame(cvec.transform(x_test).todense(), columns=cvec.get_feature_names_out())
+def text_Regression_model():
+    y = merged_df['price']
+    X = merged_df['product_name']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    cvec = CountVectorizer(stop_words='english').fit(X_train)
+    name_train = pd.DataFrame(cvec.transform(X_train).todense(), columns=cvec.get_feature_names_out())
+    name_test = pd.DataFrame(cvec.transform(X_test).todense(), columns=cvec.get_feature_names_out())
+    X = merged_df['product_description']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    cvec = CountVectorizer(stop_words='english').fit(X_train)
+    description_train = pd.DataFrame(cvec.transform(X_train).todense(), columns=cvec.get_feature_names_out())
+    description_test = pd.DataFrame(cvec.transform(X_test).todense(), columns=cvec.get_feature_names_out())
+    X = merged_df['location']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    cvec = CountVectorizer(stop_words='english').fit(X_train)
+    location_train = pd.DataFrame(cvec.transform(X_train).todense(), columns=cvec.get_feature_names_out())
+    location_test = pd.DataFrame(cvec.transform(X_test).todense(), columns=cvec.get_feature_names_out())
 
-x = products_df['product_description']
-y = products_df['price']
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.33)
-cvec = CountVectorizer(stop_words='english').fit(x_train)
-description_train = pd.DataFrame(cvec.transform(x_train).todense(), columns=cvec.get_feature_names_out())
-description_test = pd.DataFrame(cvec.transform(x_test).todense(), columns=cvec.get_feature_names_out())
+    train = pd.concat([name_train, description_train, location_train], axis=1)
+    test = pd.concat([name_test, description_test, location_test], axis=1)
+    train = train.loc[:,~train.columns.duplicated()].copy()
+    test = test.loc[:,~test.columns.duplicated()].copy()
 
-x = products_df['location']
-y = products_df['price']
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.33)
-cvec = CountVectorizer(stop_words='english').fit(x_train)
-location_train = pd.DataFrame(cvec.transform(x_train).todense(), columns=cvec.get_feature_names_out())
-location_test = pd.DataFrame(cvec.transform(x_test).todense(), columns=cvec.get_feature_names_out())
+    lr = LogisticRegression(solver='liblinear', random_state=42, max_iter=200)
+    lr.fit(train, y_train)
+    print(f'The score was: {lr.score(test, y_test)}')
 
-#Logistic Regression Model for product name, description and location with regards to price
-#train = pd.concat([name_train, description_train, location_train], axis=1)
-#test = pd.concat([name_test, description_test, location_test], axis=1)
-#lr = LogisticRegression(max_iter=10000)
-#lr.fit(train, y_train)
-#print(lr.score(test, y_test))
+#text_Regression_model()
 
-#Load Image Data for classification
-image_data = np.load('images.npy')
+def image_Classification_model():
+    image_data = np.load('images.npy')
+    X = image_data[:-1]
+    print(X.shape)
+    y = merged_df['category'].to_numpy()
+    print(y.shape)
+    X_flat = np.array(X).reshape((12604, 256*256*3))
+    print(X_flat.shape)
+    X_train, X_test, y_train, y_test = train_test_split(X_flat, y, test_size=0.2, random_state=42)
 
-#Merge The 2 dataframes on product_id and id
-merged_df = images_df.merge(products_df[['id', 'category_unique']], left_on='product_id',
-                  right_on='id')
+    # Provide chunks one by one
+    chunkstartmarker = 0
+    chunksize = 500
+    numtrainingpoints = len(X_train)
+    model = SGDClassifier(loss='log_loss')
+    while chunkstartmarker < numtrainingpoints:
+        X_chunk = X_train[chunkstartmarker:chunkstartmarker+chunksize]
+        y_chunk = y_train[chunkstartmarker:chunkstartmarker+chunksize]
+        model.partial_fit(X_chunk, y_chunk, np.unique(y))
+        chunkstartmarker += chunksize
+    y_pred = model.predict(X_test)
+    print(accuracy_score(y_test, y_pred))
 
-#Classification Model for the cleaned Images
-X = image_data[:12604]
-print(X.shape)
-y = merged_df['category_unique']
-print(y.shape)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-log_reg = LogisticRegression(multi_class='multinomial', solver='newton-cg')
-log_reg.fit(X_train, y_train)
-y_pred = log_reg.predict(X_test)
-print(accuracy_score(y_test, y_pred))
+image_Classification_model()
+
