@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.linear_model import SGDClassifier
+from sklearn.preprocessing import OneHotEncoder
 
 #Load the dataset from CSV
 pd.set_option('display.max_columns', None)
@@ -30,12 +31,12 @@ def get_unique(df):
 
 def clean_MergedDataframe():
     merged_df = products_df.merge(images_df[['product_id']], left_on='id',
-                  right_on='product_id').drop(['id', 'url', 'page_id', 'create_time', 'product_id'], axis=1)
+                  right_on='product_id', sort=True).drop(['id', 'url', 'page_id', 'create_time', 'product_id'], axis=1)
     merged_df = merged_df.iloc[: , 1:]
     merged_df = merged_df.astype('string')
     merged_df['price'] = merged_df['price'].str.replace('[£,]', '', regex=True)
     merged_df['price'] = merged_df['price'].astype('float64')
-    merged_df['price'] = merged_df['price'].astype('int')
+    merged_df['price'] = merged_df['price'].astype('int64')
     merged_df['product_name'] = merged_df['product_name'].str.lower().replace('\W', ' ', regex=True)
     merged_df['product_name'] = merged_df['product_name'].str.replace('\s+', ' ', regex=True)
     merged_df['product_description'] = merged_df['product_description'].str.lower().replace('\W', ' ', regex=True)
@@ -81,19 +82,18 @@ def text_Regression_model():
 
 def image_Classification_model():
     image_data = np.load('images.npy')
-    X = image_data[:-1]
+    X = image_data
     print(X.shape)
     y = merged_df['category'].to_numpy()
     print(y.shape)
     X_flat = np.array(X).reshape((12604, 256*256*3))
     print(X_flat.shape)
     X_train, X_test, y_train, y_test = train_test_split(X_flat, y, test_size=0.2, random_state=42)
-
-    # Provide chunks one by one
+    #Provide chunks one by one
     chunkstartmarker = 0
-    chunksize = 500
+    chunksize = 100
     numtrainingpoints = len(X_train)
-    model = SGDClassifier(loss='log_loss')
+    model = SGDClassifier()
     while chunkstartmarker < numtrainingpoints:
         X_chunk = X_train[chunkstartmarker:chunkstartmarker+chunksize]
         y_chunk = y_train[chunkstartmarker:chunkstartmarker+chunksize]
