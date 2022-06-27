@@ -20,10 +20,8 @@ def remove_Unmatched_Images_ByID():
         str = file.replace('images/', '')
         str = str.replace('.jpg', '')
         id_list.append(str)
-
     images_df = pd.read_csv("Images.csv", lineterminator='\n')
-
-    for idx, id in enumerate(id_list):
+    for id in id_list:
         if id not in images_df['id'].unique():
             os.remove('images/' + id + '.jpg')
 
@@ -52,9 +50,10 @@ def min_Dimensions_of_Image():
 if __name__ == '__main__':
     remove_Unmatched_Images_ByID()
     #Find min Dimensions and then choose a valid FinalSize
-    min_Dimensions_of_Image()
+    #min_Dimensions_of_Image()
     path = "images/"
     dirs = os.listdir(path)
+    dirs = sorted(dirs)
     #Choosing 256 as FinalSize after evaluating the Min dimensions
     final_size = 256
     for n, item in enumerate(dirs, 1):
