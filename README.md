@@ -73,11 +73,63 @@ data now rather than always creating the image data upon running every time. ima
 
 ## Milestone 3: Create Simple Machine Learning Models
 
+- Simple Regression Model
+
 ```python
-    """
-        Code Example Template
-    """
+      def text_Regression_model():
+        y = merged_df['price']
+        X = merged_df['product_name']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+        cvec = CountVectorizer(stop_words='english').fit(X_train)
+        name_train = pd.DataFrame(cvec.transform(X_train).todense(), columns=cvec.get_feature_names_out())
+        name_test = pd.DataFrame(cvec.transform(X_test).todense(), columns=cvec.get_feature_names_out())
+        X = merged_df['product_description']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+        cvec = CountVectorizer(stop_words='english').fit(X_train)
+        description_train = pd.DataFrame(cvec.transform(X_train).todense(), columns=cvec.get_feature_names_out())
+        description_test = pd.DataFrame(cvec.transform(X_test).todense(), columns=cvec.get_feature_names_out())
+        X = merged_df['location']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+        cvec = CountVectorizer(stop_words='english').fit(X_train)
+        location_train = pd.DataFrame(cvec.transform(X_train).todense(), columns=cvec.get_feature_names_out())
+        location_test = pd.DataFrame(cvec.transform(X_test).todense(), columns=cvec.get_feature_names_out())
+
+        train = pd.concat([name_train, description_train, location_train], axis=1)
+        test = pd.concat([name_test, description_test, location_test], axis=1)
+        train = train.loc[:,~train.columns.duplicated()].copy()
+        test = test.loc[:,~test.columns.duplicated()].copy()
+
+        lr = LogisticRegression(solver='liblinear', random_state=42, max_iter=200)
+        lr.fit(train, y_train)
+        print(f'The score was: {lr.score(test, y_test)}')
 ```
+
+- Simple Classification Model
+
+```python
+    def image_Classification_model():
+        image_data = np.load('images.npy')
+        X = image_data
+        print(X.shape)
+        y = merged_df['category'].to_numpy()
+        print(y.shape)
+        X_flat = np.array(X).reshape((12604, 256*256*3))
+        print(X_flat.shape)
+        X_train, X_test, y_train, y_test = train_test_split(X_flat, y, test_size=0.2, random_state=42)
+        #Provide chunks one by one
+        chunkstartmarker = 0
+        chunksize = 100
+        numtrainingpoints = len(X_train)
+        model = SGDClassifier()
+        while chunkstartmarker < numtrainingpoints:
+            X_chunk = X_train[chunkstartmarker:chunkstartmarker+chunksize]
+            y_chunk = y_train[chunkstartmarker:chunkstartmarker+chunksize]
+            model.partial_fit(X_chunk, y_chunk, np.unique(y))
+            chunkstartmarker += chunksize
+        y_pred = model.predict(X_test)
+        print(accuracy_score(y_test, y_pred))
+```
+
 
 ## Milestone 4: Create The Vision Model
 
